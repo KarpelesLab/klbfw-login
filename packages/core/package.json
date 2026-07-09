@@ -1,0 +1,56 @@
+{
+  "name": "@karpeleslab/klb-login-core",
+  "version": "1.0.0",
+  "description": "Framework-agnostic User Flow v2 login engine + renderer. Loadable from a CDN and extensible without redeploying host sites.",
+  "type": "module",
+  "main": "dist/core.mjs",
+  "module": "dist/core.mjs",
+  "unpkg": "dist/core.mjs",
+  "jsdelivr": "dist/core.mjs",
+  "types": "types.d.ts",
+  "exports": {
+    ".": {
+      "types": "./types.d.ts",
+      "import": "./dist/core.mjs"
+    },
+    "./src/index.js": "./src/index.js"
+  },
+  "files": [
+    "dist",
+    "src",
+    "types.d.ts",
+    "LICENSE",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "test": "node --test",
+    "prepublishOnly": "vite build"
+  },
+  "keywords": [
+    "klbfw",
+    "login",
+    "authentication",
+    "webauthn",
+    "passkey",
+    "oauth2",
+    "user-flow"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KarpelesLab/klbfw-login.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/KarpelesLab/klbfw-login/tree/master/packages/core#readme",
+  "author": "Karpelès Lab Inc.",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "jsdom": "^26.0.0",
+    "vite": "^6.2.0"
+  }
+}

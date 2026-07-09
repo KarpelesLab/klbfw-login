@@ -1,0 +1,16 @@
+{
+  "name": "klbfw-login",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Pluggable, CDN-updatable login module for klbfw-based sites (User Flow v2).",
+  "type": "module",
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev:core": "pnpm --filter @karpeleslab/klb-login-core dev",
+    "test": "pnpm -r --if-present test",
+    "lint": "pnpm -r --if-present lint",
+    "cdn:publish": "bash scripts/publish-cdn.sh"
+  },
+  "license": "MIT",
+  "packageManager": "pnpm@9.0.0"
+}

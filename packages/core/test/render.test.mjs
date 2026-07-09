@@ -1,0 +1,125 @@
+// DOM renderer tests under jsdom.
+import { test, before } from 'node:test';
+import assert from 'node:assert/strict';
+import { JSDOM } from 'jsdom';
+
+let mount;
+
+before(async () => {
+  const dom = new JSDOM('<!doctype html><html><head></head><body></body></html>', {
+    pretendToBeVisual: true,
+  });
+  globalThis.window = dom.window;
+  globalThis.document = dom.window.document;
+  // navigator is a getter-only global in modern Node; expose jsdom's where possible.
+  try {
+    globalThis.navigator = dom.window.navigator;
+  } catch {
+    /* Node already provides a navigator; jsdom's document/window are enough here */
+  }
+  ({ mount } = await import('../src/index.js'));
+});
+
+const ok = (data) => Promise.resolve({ result: 'success', data });
+
+function scriptedRest() {
+  let step = 0;
+  return (name, verb, params) => {
+    if (params.action) {
+      step = 1;
+      return ok({
+        initial: true, session: 's1', message: 'Sign in', req: ['email'],
+        fields: [
+          { cat: 'label', type: 'label', label: 'Welcome' },
+          { cat: 'input', name: 'email', type: 'email', label: 'Email' },
+          { cat: 'label', type: 'label', label: 'Forgot?', link: '@action=reset_password', linkText: 'Forgot?' },
+          { type: 'oauth2', id: 'google', info: { Token_Name: 'google', Name: 'Google' }, button: { 'background-color': '#4285F4' } },
+        ],
+      });
+    }
+    if (step === 1) {
+      step = 2;
+      return ok({ session: 's2', req: ['password'],
+        fields: [{ cat: 'input', name: 'password', type: 'password', label: 'Password' }] });
+    }
+    return ok({ complete: true, user: { Email: 'a@b.c' }, Redirect: '/dash', Token: 'tok' });
+  };
+}
+
+const tick = () => new Promise((r) => setTimeout(r, 10));
+
+test('renders the identifier step with themed vars, oauth button, and @action link', async () => {
+  const el = document.createElement('div');
+  document.body.appendChild(el);
+  const inst = mount(el, { rest: scriptedRest(), theme: { accent: '#6c5ce7' } });
+  await tick();
+
+  assert.ok(el.classList.contains('klb-login'));
+  assert.equal(el.style.getPropertyValue('--klb-login-accent'), '#6c5ce7');
+  assert.ok(document.getElementById('klb-login-core-styles'), 'stylesheet injected');
+
+  const email = el.querySelector('input[type=email]');
+  assert.ok(email, 'email input present');
+  assert.equal(email.getAttribute('autocomplete'), 'username');
+
+  const oauth = el.querySelector('.klb-login__oauth-button');
+  assert.ok(oauth, 'oauth button present');
+  assert.match(oauth.style.backgroundColor, /66,\s*133,\s*244|#4285F4/i);
+
+  const link = el.querySelector('.klb-login__link');
+  assert.equal(link.textContent, 'Forgot?');
+  assert.equal(link.getAttribute('href'), '#'); // @action links don't navigate
+
+  assert.equal(el.querySelector('.klb-login__button--primary').textContent, 'Continue');
+  inst.destroy();
+});
+
+test('advances to the password step with a hidden username and completes', async () => {
+  const el = document.createElement('div');
+  document.body.appendChild(el);
+  let completed = null;
+  const inst = mount(el, { rest: scriptedRest(), onComplete: (r) => { completed = r; } });
+  await tick();
+
+  const email = el.querySelector('input[type=email]');
+  email.value = 'a@b.c';
+  email.dispatchEvent(new window.Event('input'));
+  el.querySelector('form').dispatchEvent(new window.Event('submit'));
+  await tick();
+
+  assert.ok(el.querySelector('input[name=username].klb-login__hidden'), 'hidden username for password managers');
+  assert.equal(el.querySelector('input[type=password]').getAttribute('autocomplete'), 'current-password');
+  assert.equal(el.querySelector('.klb-login__button--primary').textContent, 'Sign In');
+  assert.ok(el.querySelector('.klb-login__button--secondary'), 'back button on non-initial step');
+
+  const pw = el.querySelector('input[type=password]');
+  pw.value = 'pw';
+  pw.dispatchEvent(new window.Event('input'));
+  el.querySelector('form').dispatchEvent(new window.Event('submit'));
+  await tick();
+
+  assert.ok(completed, 'onComplete fired');
+  assert.equal(completed.redirect, '/dash');
+  inst.destroy();
+});
+
+test('client-side validation blocks submit when a required field is empty', async () => {
+  const el = document.createElement('div');
+  document.body.appendChild(el);
+  let calls = 0;
+  const rest = (name, verb, params) => {
+    calls += 1;
+    return ok({ initial: true, session: 's1', req: ['email'],
+      fields: [{ cat: 'input', name: 'email', type: 'email', label: 'Email' }] });
+  };
+  const inst = mount(el, { rest });
+  await tick();
+  const callsAfterStart = calls;
+
+  el.querySelector('form').dispatchEvent(new window.Event('submit')); // email empty
+  await tick();
+
+  assert.equal(calls, callsAfterStart, 'no network call while required field is empty');
+  assert.ok(el.querySelector('.klb-login__error'), 'validation error shown');
+  inst.destroy();
+});

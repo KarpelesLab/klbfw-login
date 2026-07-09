@@ -1,0 +1,59 @@
+{
+  "name": "@karpeleslab/klb-login-vue",
+  "version": "1.0.0",
+  "description": "Thin Vue 3 plugin around @karpeleslab/klb-login-core: dynamically loads the CDN core, injects klbfw transport + i18n, forwards events.",
+  "type": "module",
+  "main": "dist/klb-login-vue.mjs",
+  "module": "dist/klb-login-vue.mjs",
+  "types": "types.d.ts",
+  "exports": {
+    ".": {
+      "types": "./types.d.ts",
+      "import": "./dist/klb-login-vue.mjs"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "types.d.ts",
+    "LICENSE",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "vite build",
+    "prepublishOnly": "vite build"
+  },
+  "keywords": [
+    "klbfw",
+    "login",
+    "authentication",
+    "vue",
+    "vue3",
+    "passkey",
+    "oauth2"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KarpelesLab/klbfw-login.git",
+    "directory": "packages/vue"
+  },
+  "homepage": "https://github.com/KarpelesLab/klbfw-login/tree/master/packages/vue#readme",
+  "author": "Karpelès Lab Inc.",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "peerDependencies": {
+    "vue": "^3.3.0",
+    "@karpeleslab/klbfw": "^0.2.0"
+  },
+  "dependencies": {
+    "@karpeleslab/klb-login-core": "workspace:^"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.1",
+    "vite": "^6.2.0",
+    "vue": "^3.5.13"
+  }
+}

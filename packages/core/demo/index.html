@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>klb-login-core demo</title>
+    <style>
+      body { margin: 0; min-height: 100vh; display: grid; place-items: center;
+             background: #eef1f5; font-family: system-ui, sans-serif; }
+      #log { position: fixed; bottom: 0; left: 0; right: 0; max-height: 30vh; overflow: auto;
+             margin: 0; padding: 8px 12px; background: #111; color: #6f6; font: 12px/1.4 monospace; }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <pre id="log"></pre>
+
+    <script type="module">
+      // Mounts the built core against a MOCK transport so the renderer and step
+      // transitions can be verified offline. Real transport is klbfw's rest().
+      import { mount } from '../dist/core.mjs';
+
+      const log = (...a) => {
+        document.getElementById('log').textContent +=
+          a.map((x) => (typeof x === 'string' ? x : JSON.stringify(x))).join(' ') + '\n';
+      };
+
+      // A tiny scripted User:flow: email -> password -> complete, with an OAuth
+      // button and a "forgot password" @action link on the first step.
+      let step = 0;
+      const wrap = (data) => Promise.resolve({ result: 'success', data });
+      const mockRest = (name, verb, params) => {
+        log('→', name, verb, params);
+        if (params.oauth2) return wrap({ url: 'https://example.com/oauth?provider=' + params.oauth2 });
+        if (params.action === 'reset_password') {
+          return wrap({ initial: true, session: 's', message: 'Reset your password',
+            req: ['email'], fields: [{ cat: 'input', name: 'email', type: 'email', label: 'Email' }] });
+        }
+        if (step === 0 && params.action) {
+          step = 1;
+          return wrap({
+            initial: true, session: 's1', message: 'Sign in to your account', req: ['email'],
+            fields: [
+              { cat: 'label', type: 'label', label: 'Welcome back' },
+              { cat: 'input', name: 'email', type: 'email', label: 'Email' },
+              { cat: 'label', type: 'label', label: 'Forgot your password?', link: '@action=reset_password', linkText: 'Forgot your password?' },
+              { type: 'oauth2', id: 'google', info: { Token_Name: 'google', Name: 'Google' }, button: { 'background-color': '#4285F4' } },
+            ],
+          });
+        }
+        if (step === 1) {
+          step = 2;
+          return wrap({ session: 's2', message: 'Enter your password', req: ['password'],
+            fields: [{ cat: 'input', name: 'password', type: 'password', label: 'Password' }] });
+        }
+        return wrap({ complete: true, user: { name: 'Demo User' }, Redirect: '/dashboard', Token: 'tok' });
+      };
+
+      mount(document.getElementById('app'), {
+        rest: mockRest,
+        theme: { accent: '#6c5ce7' },
+        onComplete: (r) => log('✔ complete', r),
+        onStateChange: (s) => log('· state', s.status),
+        onRedirect: (url) => log('↪ redirect', url),
+      });
+    </script>
+  </body>
+</html>
