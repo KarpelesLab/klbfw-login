@@ -89,15 +89,17 @@ run aws s3 cp "$dist" "s3://$BUCKET/$PREFIX/$version/core.mjs" \
   --content-type text/javascript \
   --cache-control 'public, max-age=31536000, immutable'
 
-# Mutable major pointer (short cache so releases propagate quickly).
+# Mutable major pointer. 1-hour cache — a new 1.x release propagates within an
+# hour (still far faster than redeploying sites); purge the Cloudflare cache for
+# this path if you need it live immediately.
 run aws s3 cp "$dist" "s3://$BUCKET/$PREFIX/v$major/core.mjs" \
   --content-type text/javascript \
-  --cache-control 'public, max-age=300'
+  --cache-control 'public, max-age=3600'
 
 echo
 echo "Published:"
 echo "  https://$HOST/$PREFIX/$version/core.mjs   (immutable)"
 echo "  https://$HOST/$PREFIX/v$major/core.mjs     (major pointer — sites load this)"
 echo
-echo "Note: the major pointer has a 5-minute edge cache; a new release is live"
-echo "within ~5 min (or purge the Cloudflare cache for that path to force it)."
+echo "Note: the major pointer has a 1-hour cache; a new release is live within"
+echo "~1 hour (or purge the Cloudflare cache for that path to force it now)."

@@ -20,8 +20,8 @@ within major 1, shipping core = pushing to that pointer. Nothing else moves.
    ```bash
    pnpm cdn:publish            # uploads core/<version>/ + updates core/v1 pointer
    ```
-   Live within ~5 min (Cloudflare cache). Done manually from a trusted machine —
-   never CI.
+   Live within ~1 hour (Cloudflare cache); purge the `core/v1` path to force it
+   sooner. Done manually from a trusted machine — never CI.
 4. **(Recommended) update npm too** so the registry + sites' bundled fallback
    track the latest. Commit the version bump, then cut a release:
    ```bash
