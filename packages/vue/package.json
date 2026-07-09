@@ -1,6 +1,6 @@
 {
   "name": "@karpeleslab/klb-login-vue",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Thin Vue 3 plugin around @karpeleslab/klb-login-core: dynamically loads the CDN core, injects klbfw transport + i18n, forwards events.",
   "type": "module",
   "main": "dist/klb-login-vue.mjs",

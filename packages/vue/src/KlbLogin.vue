@@ -1,6 +1,6 @@
 <script>
 import { defineComponent, ref, inject, onMounted, onBeforeUnmount } from 'vue';
-import { rest, getLocale, Get } from '@karpeleslab/klbfw';
+import { rest, getLocale, Get, getRealm } from '@karpeleslab/klbfw';
 import { loadCore } from './loadCore.js';
 import { KLB_LOGIN_OPTIONS } from './plugin.js';
 
@@ -53,6 +53,9 @@ export default defineComponent({
         translate: props.translate || globalOptions.translate,
         messages: props.messages || globalOptions.messages,
         theme: props.theme || globalOptions.theme,
+        // Realm flags from klbfw's initial state (no request); the core reads
+        // e.g. oauth_first from here. getRealm().Flags is a { name: true } map.
+        realmFlags: (getRealm() || {}).Flags,
         renderers: props.renderers,
         onComplete: (result) => emit('success', result),
         onError: (err) => emit('error', err),

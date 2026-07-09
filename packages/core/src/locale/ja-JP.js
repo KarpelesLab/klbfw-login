@@ -6,6 +6,7 @@ export default {
   loading: '読み込み中…',
   try_again: '再試行',
   user_oauth_help: '以下のサービスでログイン',
+  oauth_first_email_help: 'またはメールアドレスでログイン',
 
   passkey_button: 'パスキーでログイン',
   passkey_register_button: 'パスキーを使用',

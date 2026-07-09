@@ -6,6 +6,7 @@ export default {
   loading: 'Chargement…',
   try_again: 'Réessayer',
   user_oauth_help: 'Ou connectez-vous avec l’un des services suivants',
+  oauth_first_email_help: 'Ou connectez-vous avec votre e-mail',
 
   passkey_button: 'Se connecter avec une clé d’accès',
   passkey_register_button: 'Utiliser une clé d’accès',

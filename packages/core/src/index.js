@@ -17,6 +17,8 @@
 //   translate,               // optional (token, args) => string  (host i18n wins)
 //   messages,                // optional { locale: { token: string } } overrides
 //   theme,                   // optional { accent: '#..', radius: '8px', ... } CSS vars
+//   realmFlags,              // optional realm flags (array or { name: true } map,
+//                            //   e.g. klbfw getRealm().Flags) — drives oauth_first
 //   renderers,               // optional { [fieldType]: spec|renderFn } overrides
 //   slots,                   // optional { header, footer } Node | string(HTML) | fn(ctx)
 //   onComplete(result),      // { user, token, redirect, data }
@@ -30,7 +32,7 @@ import { createTranslator } from './i18n.js';
 import { createRenderer } from './render/renderer.js';
 import { registerFieldType } from './render/registry.js';
 
-export const version = '1.0.1';
+export const version = '1.0.2';
 
 export { createFlow, registerFieldType };
 

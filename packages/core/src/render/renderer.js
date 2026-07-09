@@ -9,6 +9,7 @@
 
 import { el, clear } from './dom.js';
 import { injectStyles } from '../styles.js';
+import { normalizeFlags } from '../realm-flags.js';
 import { resolveFieldSpec } from './registry.js';
 import { registerBuiltins } from './fields/index.js';
 import { isPasskeySupported } from '../passkey.js';
@@ -75,6 +76,11 @@ export function createRenderer(element, controller, opts, t) {
       isFocusTarget: (field) => field.name === focusName,
       passkeySupported,
       passkeyLoginField: loginPasskey,
+      // Active realm flags: the klbfw-provided `realmFlags` option (available
+      // with no request) unioned with any `realm_flags` on the flow response.
+      // Missing → empty set (safe defaults).
+      hasFlag: (name) =>
+        normalizeFlags(opts.realmFlags, state.flowData && state.flowData.realm_flags).has(name),
       setError: (msg) => {
         localError = msg;
         render();
@@ -142,8 +148,31 @@ export function createRenderer(element, controller, opts, t) {
       controller.submit();
     });
 
+    // The `oauth_first` realm flag surfaces the OAuth providers above the form.
+    const oauthFirst = ctx.hasFlag('oauth_first');
+
+    // Build the OAuth section for a given placement:
+    //  - 'top'    (oauth_first): buttons first, then a divider introducing the
+    //             email form below (only when a form actually follows).
+    //  - 'bottom' (default): a divider ("Or sign in with…") then the buttons.
+    const buildOAuth = (position) => {
+      if (!groups.oauth.length) return;
+      const buttons = el('div', { class: 'klb-login__oauth-buttons' });
+      groups.oauth.forEach((f) => appendField(buttons, f, ctx, overrides));
+      const divider = (key) =>
+        el('div', { class: 'klb-login__oauth-divider' }, el('span', {}, t(key)));
+      const children =
+        position === 'top'
+          ? [buttons, groups.inputs.length ? divider('oauth_first_email_help') : null]
+          : [divider('user_oauth_help'), buttons];
+      form.appendChild(el('div', { class: 'klb-login__oauth' }, children));
+    };
+
     // Labels (instructions / errors / @action links).
     groups.labels.forEach((f) => appendField(form, f, ctx, overrides));
+
+    // OAuth on top when the realm prefers it.
+    if (oauthFirst) buildOAuth('top');
 
     // Hidden username on password-only steps → password-manager pairing.
     if (showHiddenIdentifier(groups, state.values, state.flowData)) {
@@ -215,17 +244,8 @@ export function createRenderer(element, controller, opts, t) {
       );
     }
 
-    // OAuth providers.
-    if (groups.oauth.length) {
-      const buttons = el('div', { class: 'klb-login__oauth-buttons' });
-      groups.oauth.forEach((f) => appendField(buttons, f, ctx, overrides));
-      form.appendChild(
-        el('div', { class: 'klb-login__oauth' }, [
-          el('div', { class: 'klb-login__oauth-divider' }, el('span', {}, t('user_oauth_help'))),
-          buttons,
-        ]),
-      );
-    }
+    // OAuth at the bottom by default (unless already placed on top).
+    if (!oauthFirst) buildOAuth('bottom');
 
     return { form, ctx, groups, focusable: !busy };
   };

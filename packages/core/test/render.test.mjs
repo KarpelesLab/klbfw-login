@@ -161,6 +161,43 @@ test('passkey assertion button shows on the initial step but not on later steps'
   inst.destroy();
 });
 
+test('oauth_first realm flag renders OAuth above the form', async () => {
+  const rest = () =>
+    ok({
+      initial: true, session: 's1', req: ['email'],
+      fields: [
+        { cat: 'input', name: 'email', type: 'email', label: 'Email' },
+        { type: 'oauth2', id: 'google', info: { Token_Name: 'google' }, button: {} },
+      ],
+    });
+
+  // Default: OAuth sits after the email input.
+  const a = document.createElement('div'); document.body.appendChild(a);
+  const ia = mount(a, { rest });
+  await tick();
+  let nodes = [...a.querySelectorAll('input[type=email], .klb-login__oauth')];
+  assert.equal(nodes[0].tagName, 'INPUT', 'default: email before oauth');
+  assert.ok(nodes[1].classList.contains('klb-login__oauth'));
+  ia.destroy();
+
+  // oauth_first (object-map form, like klbfw getRealm().Flags): OAuth first.
+  const b = document.createElement('div'); document.body.appendChild(b);
+  const ib = mount(b, { rest, realmFlags: { oauth_first: true } });
+  await tick();
+  nodes = [...b.querySelectorAll('input[type=email], .klb-login__oauth')];
+  assert.ok(nodes[0].classList.contains('klb-login__oauth'), 'oauth_first: oauth before email');
+  assert.equal(nodes[1].tagName, 'INPUT');
+  ib.destroy();
+
+  // Array form (like a flow response's realm_flags) works too.
+  const c = document.createElement('div'); document.body.appendChild(c);
+  const ic = mount(c, { rest, realmFlags: ['oauth_first'] });
+  await tick();
+  nodes = [...c.querySelectorAll('input[type=email], .klb-login__oauth')];
+  assert.ok(nodes[0].classList.contains('klb-login__oauth'), 'array flag form also puts oauth first');
+  ic.destroy();
+});
+
 test('client-side validation blocks submit when a required field is empty', async () => {
   const el = document.createElement('div');
   document.body.appendChild(el);

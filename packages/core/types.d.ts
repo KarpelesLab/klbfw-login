@@ -31,6 +31,7 @@ export interface FieldContext {
   isFocusTarget(field: any): boolean;
   passkeySupported: boolean;
   passkeyLoginField: any | null;
+  hasFlag(name: string): boolean;
   setError(message: string): void;
 }
 
@@ -61,6 +62,7 @@ export interface MountOptions {
   translate?: TranslateFn;
   messages?: Record<string, Record<string, string>>;
   theme?: Record<string, string>;
+  realmFlags?: string[] | Record<string, boolean>;
   renderers?: Record<string, FieldSpec | ((field: any, ctx: FieldContext) => Node | null)>;
   slots?: { header?: any; footer?: any };
   onComplete?(result: CompleteResult): void;

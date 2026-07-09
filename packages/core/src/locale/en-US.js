@@ -10,6 +10,7 @@ export default {
   loading: 'Loading…',
   try_again: 'Try again',
   user_oauth_help: 'Or sign in with one of the following services',
+  oauth_first_email_help: 'Or sign in with your email',
 
   passkey_button: 'Sign in with a passkey',
   passkey_register_button: 'Use a passkey',
