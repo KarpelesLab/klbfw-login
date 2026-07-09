@@ -1,6 +1,6 @@
 <script>
 import { defineComponent, ref, inject, onMounted, onBeforeUnmount } from 'vue';
-import { rest, getLocale } from '@karpeleslab/klbfw';
+import { rest, getLocale, Get } from '@karpeleslab/klbfw';
 import { loadCore } from './loadCore.js';
 import { KLB_LOGIN_OPTIONS } from './plugin.js';
 
@@ -36,9 +36,11 @@ export default defineComponent({
     let instance = null;
 
     onMounted(async () => {
-      const params = new URLSearchParams(window.location.search);
-      const sessionFromUrl = params.get('session');
-      const actionFromUrl = params.get('action');
+      // Read query params through klbfw's Get() rather than window.location so
+      // it works in SSR/prefixed (/l/en-US/…) modes and stays consistent with
+      // the rest of a klbfw site. `session` is the one-time OAuth-callback token.
+      const sessionFromUrl = Get('session');
+      const actionFromUrl = Get('action');
 
       const core = await loadCore(props.coreUrl || globalOptions.coreUrl);
       if (!mountEl.value) return; // unmounted while loading
