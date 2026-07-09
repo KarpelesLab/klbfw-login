@@ -11,12 +11,33 @@ before(async () => {
   });
   globalThis.window = dom.window;
   globalThis.document = dom.window.document;
-  // navigator is a getter-only global in modern Node; expose jsdom's where possible.
+
+  // Mock enough WebAuthn so isPasskeySupported() is true and passkey rendering
+  // is exercised. Conditional mediation is reported unavailable so onStepEnter
+  // never fires a real credentials.get().
+  dom.window.PublicKeyCredential = function PublicKeyCredential() {};
+  dom.window.PublicKeyCredential.isConditionalMediationAvailable = async () => false;
+  const credentials = { get: async () => null, create: async () => null };
+  // `navigator` is a getter-only global in modern Node; redefine it (and its
+  // credentials) so the module sees WebAuthn support.
   try {
-    globalThis.navigator = dom.window.navigator;
+    Object.defineProperty(globalThis, 'navigator', {
+      value: dom.window.navigator,
+      configurable: true,
+      writable: true,
+    });
   } catch {
-    /* Node already provides a navigator; jsdom's document/window are enough here */
+    /* fall back to Node's navigator below */
   }
+  try {
+    Object.defineProperty(globalThis.navigator, 'credentials', {
+      value: credentials,
+      configurable: true,
+    });
+  } catch {
+    /* if navigator can't be augmented, passkey-rendering assertions are skipped */
+  }
+
   ({ mount } = await import('../src/index.js'));
 });
 
@@ -100,6 +121,43 @@ test('advances to the password step with a hidden username and completes', async
 
   assert.ok(completed, 'onComplete fired');
   assert.equal(completed.redirect, '/dash');
+  inst.destroy();
+});
+
+test('passkey assertion button shows on the initial step but not on later steps', async () => {
+  let step = 0;
+  const passkeyField = {
+    cat: 'special', type: 'passkey', rp_id: 'x', challenge: 'AAAA', submit_as: 'passkey',
+  };
+  const rest = (name, verb, params) => {
+    if (params.action) {
+      step = 1;
+      return ok({
+        initial: true, session: 's1', req: ['email'],
+        fields: [{ cat: 'input', name: 'email', type: 'email', label: 'Email' }, passkeyField],
+      });
+    }
+    // Non-initial step that still carries the passkey field alongside a code input.
+    return ok({
+      session: 's2', req: ['code'],
+      fields: [{ cat: 'input', name: 'code', type: 'text', label: 'Verification code' }, passkeyField],
+    });
+  };
+
+  const el = document.createElement('div');
+  document.body.appendChild(el);
+  const inst = mount(el, { rest });
+  await tick();
+  assert.ok(el.querySelector('.klb-login__button--passkey'), 'passkey button on initial step');
+
+  const email = el.querySelector('input[type=email]');
+  email.value = 'a@b.c';
+  email.dispatchEvent(new window.Event('input'));
+  el.querySelector('form').dispatchEvent(new window.Event('submit'));
+  await tick();
+
+  assert.ok(el.querySelector('input#code'), 'reached the verification-code step');
+  assert.equal(el.querySelector('.klb-login__button--passkey'), null, 'no passkey button on the code step');
   inst.destroy();
 });
 

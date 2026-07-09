@@ -1,6 +1,6 @@
 {
   "name": "@karpeleslab/klb-login-core",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Framework-agnostic User Flow v2 login engine + renderer. Loadable from a CDN and extensible without redeploying host sites.",
   "type": "module",
   "main": "dist/core.mjs",

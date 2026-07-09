@@ -17,6 +17,11 @@ import {
   registerPasskey,
 } from '../../passkey.js';
 
+// A step is "initial" when the server marks it as the first step of the flow.
+function isInitialStep(ctx) {
+  return !!(ctx.flowData && ctx.flowData.initial);
+}
+
 export const passkeySpec = {
   match: (field) => field.type === 'passkey' || field.type === 'passkey_register',
 
@@ -24,6 +29,15 @@ export const passkeySpec = {
     if (!isPasskeySupported()) return null;
 
     const registration = isPasskeyRegistration(field);
+
+    // The passwordless "Sign in with a passkey" assertion is a first-factor
+    // entry point: it belongs on the initial login screen only. Once the user
+    // is mid-flow (entering a password or a verification code) the server may
+    // still carry the passkey field along, but showing the button there is
+    // confusing — so suppress the assertion button on non-initial steps.
+    // Registration ("Use a passkey") is unaffected; it sits on its own form.
+    if (!registration && !isInitialStep(ctx)) return null;
+
     const label = registration ? ctx.t('passkey_register_button') : ctx.t('passkey_button');
 
     const onClick = async () => {
@@ -58,6 +72,10 @@ export const passkeySpec = {
   // leaves it pending until aborted on step change / destroy.
   onStepEnter(field, ctx) {
     if (isPasskeyRegistration(field) || !isPasskeySupported()) return undefined;
+    // Conditional autofill pairs with the initial step's identifier input
+    // (autocomplete="username webauthn"); later steps have no such field, so
+    // only arm it there — matching where the assertion button is shown.
+    if (!isInitialStep(ctx)) return undefined;
 
     const controller = new AbortController();
     let aborted = false;

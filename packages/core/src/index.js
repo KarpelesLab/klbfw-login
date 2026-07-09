@@ -30,7 +30,7 @@ import { createTranslator } from './i18n.js';
 import { createRenderer } from './render/renderer.js';
 import { registerFieldType } from './render/registry.js';
 
-export const version = '1.0.0';
+export const version = '1.0.1';
 
 export { createFlow, registerFieldType };
 
