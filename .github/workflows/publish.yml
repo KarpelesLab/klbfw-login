@@ -1,0 +1,76 @@
+name: Publish
+
+# Auto-publish to npm when a GitHub Release is published.
+#
+# Auth is npm "trusted publishing" via OIDC — no NPM_TOKEN secret is stored.
+# The job requests an OIDC token (`id-token: write`); npm exchanges it for a
+# short-lived publish token because this repo + workflow are configured as a
+# Trusted Publisher on each package (npmjs.com → package → Settings → Trusted
+# Publisher: owner KarpelesLab, repo klbfw-login, workflow publish.yml).
+#
+# Packages are built with pnpm (which rewrites the `workspace:^` dependency to a
+# real version at pack time), then the resulting tarballs are published with the
+# npm CLI (the reference implementation of OIDC trusted publishing + provenance).
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      # OIDC trusted publishing + provenance require a recent npm (>= 11.5.1);
+      # Node 22 ships an older npm.
+      - name: Upgrade npm
+        run: npm install -g npm@latest
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Test
+        run: pnpm test
+
+      - name: Pack (rewrites workspace: deps to real versions)
+        run: |
+          mkdir -p _tars
+          pnpm --filter @karpeleslab/klb-login-core pack --pack-destination "$PWD/_tars"
+          pnpm --filter @karpeleslab/klb-login-vue  pack --pack-destination "$PWD/_tars"
+
+      # Publish each tarball, skipping any version already on npm so a release
+      # that only bumps one package doesn't fail on the unchanged one. The glob
+      # sorts core before vue alphabetically, so the dependency publishes first.
+      - name: Publish to npm (OIDC trusted publishing + provenance)
+        run: |
+          set -euo pipefail
+          for t in _tars/*.tgz; do
+            tmp="$(mktemp -d)"
+            tar -xzf "$t" -C "$tmp" package/package.json
+            name="$(node -p "require('$tmp/package/package.json').name")"
+            version="$(node -p "require('$tmp/package/package.json').version")"
+            if npm view "$name@$version" version >/dev/null 2>&1; then
+              echo "Skip $name@$version (already published)"
+            else
+              echo "Publishing $name@$version"
+              npm publish "$t" --provenance --access public
+            fi
+          done
