@@ -6,6 +6,8 @@
 
 import { isPasskeyRegistration } from '../passkey.js';
 
+import { tokenName } from '../i18n.js';
+
 const NEW_PASSWORD_ACTIONS = ['register', 'reset_password', 'recover_account'];
 
 // Split a step's fields into the buckets the renderer lays out separately.
@@ -88,4 +90,13 @@ export function inputAutocomplete(field, ctx) {
   }
   if (field.name === 'otp' || field.name === 'code') return 'one-time-code';
   return undefined;
+}
+
+// The OAuth2 consent step: an application asks the signed-in user to approve
+// its scopes. Recognized by the step's tokens (`user_flow_login_grant` message,
+// `user_grant_approval` label).
+export function isGrantStep(flowData) {
+  if (!flowData) return false;
+  if (tokenName(flowData.message) === 'user_flow_login_grant') return true;
+  return (flowData.fields || []).some((f) => tokenName(f.label) === 'user_grant_approval');
 }

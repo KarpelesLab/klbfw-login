@@ -11,12 +11,16 @@ export const labelSpec = {
     const isError = field.style === 'error';
     const cls = ['klb-login__text', isError && 'klb-login__text--error'];
 
+    // Labels are normally localized by the API; t() resolves the ones that
+    // arrive as tokens ("[I18N:…]" / `{ '@token': […] }`) and passes text through.
+    const label = ctx.t(field.label);
+
     if (!field.link) {
-      return el('div', { class: cls }, field.label || '');
+      return el('div', { class: cls }, label);
     }
 
     const actionMatch = ACTION_RE.exec(field.link);
-    const linkText = field.linkText || field.label || '';
+    const linkText = field.linkText || label;
 
     const onClick = (e) => {
       if (actionMatch) {
@@ -41,6 +45,6 @@ export const labelSpec = {
     if (!field.linkText || field.linkText === field.label) {
       return el('div', { class: cls }, link);
     }
-    return el('div', { class: cls }, [field.label + ' ', link]);
+    return el('div', { class: cls }, [label + ' ', link]);
   },
 };

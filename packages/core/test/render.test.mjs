@@ -218,3 +218,44 @@ test('client-side validation blocks submit when a required field is empty', asyn
   assert.ok(el.querySelector('.klb-login__error'), 'validation error shown');
   inst.destroy();
 });
+
+test('oauth consent step translates [I18N:…] tokens and approves by submitting the session', async () => {
+  const calls = [];
+  const rest = (name, verb, params) => {
+    calls.push(params);
+    if (params.session === 's1') return ok({ complete: true, Redirect: '/oauth2_return' });
+    return ok({
+      complete: false, initial: false, session: 's1', req: [],
+      message: '[I18N:user_flow_login_grant]',
+      user: { Display_Name: 'Jane Doe', Email: 'jane@example.com' },
+      fields: [
+        { cat: 'label', type: 'label', label: '[I18N:user_grant_approval]' },
+        { cat: 'label', type: 'label', label: 'profile' },
+      ],
+    });
+  };
+
+  const el = document.createElement('div');
+  document.body.appendChild(el);
+  let completed = null;
+  const inst = mount(el, { rest, session: 's0', onComplete: (r) => { completed = r; } });
+  await tick();
+
+  assert.equal(el.querySelector('.klb-login__message').textContent, 'Authorize access');
+  const labels = [...el.querySelectorAll('.klb-login__text')].map((n) => n.textContent);
+  assert.deepEqual(labels, ['This application is requesting access to your account:', 'profile']);
+
+  assert.equal(el.querySelector('.klb-login__user-name').textContent, 'Jane Doe');
+  assert.equal(el.querySelector('.klb-login__user-email').textContent, 'jane@example.com');
+
+  const allow = el.querySelector('.klb-login__button--primary');
+  assert.ok(allow, 'consent step has a primary button despite having no inputs');
+  assert.equal(allow.textContent, 'Allow');
+  assert.equal(el.querySelector('.klb-login__button--secondary').textContent, 'Cancel');
+
+  el.querySelector('form').dispatchEvent(new window.Event('submit'));
+  await tick();
+  assert.deepEqual(calls.at(-1), { session: 's1' }, 'approval sends the session and nothing else');
+  assert.equal(completed.redirect, '/oauth2_return');
+  inst.destroy();
+});

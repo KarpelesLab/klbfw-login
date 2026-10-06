@@ -3,10 +3,15 @@ export default {
   continue: '続ける',
   sign_in: 'ログイン',
   back: '戻る',
+  cancel: 'キャンセル',
   loading: '読み込み中…',
   try_again: '再試行',
   user_oauth_help: '以下のサービスでログイン',
   oauth_first_email_help: 'またはメールアドレスでログイン',
+
+  user_flow_login_grant: 'アクセスの許可',
+  user_grant_approval: 'このアプリケーションがあなたのアカウントへのアクセスを求めています:',
+  user_grant_approve: '許可する',
 
   passkey_button: 'パスキーでログイン',
   passkey_register_button: 'パスキーを使用',

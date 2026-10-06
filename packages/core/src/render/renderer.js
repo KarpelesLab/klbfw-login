@@ -22,6 +22,7 @@ import {
   knownEmail,
   showHiddenIdentifier,
   showHiddenPassword,
+  isGrantStep,
 } from './autofill.js';
 
 export function createRenderer(element, controller, opts, t) {
@@ -128,12 +129,28 @@ export function createRenderer(element, controller, opts, t) {
       el('p', {}, label || t('loading')),
     ]);
 
+  // The account a step is acting for, when the server names it (`data.user`) —
+  // e.g. on the consent screen, so the user sees who is granting access.
+  const renderUser = (user) => {
+    if (!user) return null;
+    const name = user.Display_Name || (user.Profile && user.Profile.Display_Name) || '';
+    const email = user.Email || '';
+    if (!name && !email) return null;
+    return el('div', { class: 'klb-login__user' }, [
+      name ? el('div', { class: 'klb-login__user-name' }, name) : null,
+      email ? el('div', { class: 'klb-login__user-email' }, email) : null,
+    ]);
+  };
+
   // Build the form for a live step (status ready / submitting / inline error).
   const renderStep = (state) => {
     const groups = groupFields(state.flowData);
     const ctx = buildStepContext(state, groups);
     const busy = state.status === 'submitting' || state.status === 'redirecting';
     const pwStep = isPasswordStep(groups);
+    // OAuth2 consent: only the button wording differs (Allow / Cancel); the
+    // step is submitted like any other, with whatever the server asked for.
+    const grantStep = isGrantStep(state.flowData);
 
     const form = el('form', { class: 'klb-login__form' });
     form.addEventListener('submit', (e) => {
@@ -216,16 +233,16 @@ export function createRenderer(element, controller, opts, t) {
     const errorText = localError || (state.status === 'error' ? state.error : null);
     if (errorText) form.appendChild(el('div', { class: 'klb-login__error' }, errorText));
 
-    // Primary submit (only when there is something to submit).
-    if (groups.inputs.length > 0) {
-      form.appendChild(
-        el(
-          'button',
-          { type: 'submit', class: 'klb-login__button klb-login__button--primary', disabled: busy },
-          pwStep ? t('sign_in') : t('continue'),
-        ),
-      );
-    }
+    // Primary submit. A rendered step is never complete, so there is always a
+    // next one to ask for — even when the step has nothing to fill in (e.g. the
+    // consent screen).
+    form.appendChild(
+      el(
+        'button',
+        { type: 'submit', class: 'klb-login__button klb-login__button--primary', disabled: busy },
+        grantStep ? t('user_grant_approve') : pwStep ? t('sign_in') : t('continue'),
+      ),
+    );
 
     // Back to the start of the flow on non-initial steps.
     if (state.flowData && !state.flowData.initial) {
@@ -238,7 +255,7 @@ export function createRenderer(element, controller, opts, t) {
               class: 'klb-login__button klb-login__button--secondary',
               on: { click: () => controller.switchAction(state.action) },
             },
-            t('back'),
+            grantStep ? t('cancel') : t('back'),
           ),
         ]),
       );
@@ -295,6 +312,8 @@ export function createRenderer(element, controller, opts, t) {
       if (state.flowData.message) {
         element.appendChild(el('div', { class: 'klb-login__message' }, t(state.flowData.message)));
       }
+      const user = renderUser(state.flowData.user);
+      if (user) element.appendChild(user);
       const { form, groups, focusable } = renderStep(state);
       element.appendChild(form);
 

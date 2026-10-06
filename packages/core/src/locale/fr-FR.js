@@ -3,10 +3,15 @@ export default {
   continue: 'Continuer',
   sign_in: 'Se connecter',
   back: 'Retour',
+  cancel: 'Annuler',
   loading: 'Chargement…',
   try_again: 'Réessayer',
   user_oauth_help: 'Ou connectez-vous avec l’un des services suivants',
   oauth_first_email_help: 'Ou connectez-vous avec votre e-mail',
+
+  user_flow_login_grant: 'Autoriser l’accès',
+  user_grant_approval: 'Cette application demande l’accès à votre compte :',
+  user_grant_approve: 'Autoriser',
 
   passkey_button: 'Se connecter avec une clé d’accès',
   passkey_register_button: 'Utiliser une clé d’accès',

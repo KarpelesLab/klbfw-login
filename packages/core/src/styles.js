@@ -40,6 +40,15 @@ export const CSS = `
 
 .klb-login__header { margin: 0 0 1.25rem; text-align: center; }
 .klb-login__message { margin: 0 0 1.25rem; text-align: center; color: var(--klb-login-muted); }
+.klb-login__user {
+  margin: 0 0 1.25rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--klb-login-border);
+  border-radius: var(--klb-login-field-radius);
+  text-align: center;
+}
+.klb-login__user-name { font-weight: 500; }
+.klb-login__user-email { color: var(--klb-login-muted); font-size: 0.9rem; overflow-wrap: anywhere; }
 
 .klb-login__form { display: flex; flex-direction: column; gap: 1rem; }
 .klb-login__group { display: flex; flex-direction: column; gap: 0.4rem; }

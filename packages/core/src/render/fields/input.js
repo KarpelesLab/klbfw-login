@@ -94,13 +94,13 @@ export const inputSpec = {
       return el('div', { class: 'klb-login__group' }, [
         el('div', { class: 'klb-login__checkbox' }, [
           control,
-          el('label', { class: 'klb-login__label', htmlFor: field.name }, field.label || ''),
+          el('label', { class: 'klb-login__label', htmlFor: field.name }, ctx.t(field.label)),
         ]),
       ]);
     }
 
     return el('div', { class: 'klb-login__group' }, [
-      field.label ? el('label', { class: 'klb-login__label', htmlFor: field.name }, field.label) : null,
+      field.label ? el('label', { class: 'klb-login__label', htmlFor: field.name }, ctx.t(field.label)) : null,
       control,
     ]);
   },
