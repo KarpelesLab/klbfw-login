@@ -14,6 +14,9 @@ name: Publish
 on:
   release:
     types: [published]
+  # Manual re-run (e.g. after fixing this workflow) — safe, since versions
+  # already on npm are skipped.
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -51,8 +54,10 @@ jobs:
       - name: "Pack (rewrites workspace deps to real versions)"
         run: |
           mkdir -p _tars
-          pnpm --filter @karpeleslab/klb-login-core pack --pack-destination "$PWD/_tars"
-          pnpm --filter @karpeleslab/klb-login-vue  pack --pack-destination "$PWD/_tars"
+          # `pnpm pack` takes no --filter, so pack from each package directory.
+          tars="$PWD/_tars"
+          (cd packages/core && pnpm pack --pack-destination "$tars")
+          (cd packages/vue  && pnpm pack --pack-destination "$tars")
 
       # Publish each tarball, skipping any version already on npm so a release
       # that only bumps one package doesn't fail on the unchanged one. The glob
