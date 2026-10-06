@@ -92,6 +92,23 @@ test('a rejected call surfaces an error state without throwing', async () => {
   assert.match(f.getState().error, /invalid|nope/i);
 });
 
+test('a result:"redirect" response is followed, not shown as an error', async () => {
+  const redirectResponse = {
+    result: 'redirect', exception: 'Exception\\Redirect', error: 'Invalid page, currently being redirected',
+    code: 200, token: 'unknown_error', redirect_url: '/oauth2_return', redirect_code: 302,
+  };
+  for (const rest of [() => Promise.reject(redirectResponse), () => Promise.resolve(redirectResponse)]) {
+    let redirected = null;
+    let errored = false;
+    const f = createFlow({ rest, onRedirect: (url) => { redirected = url; }, onError: () => { errored = true; } });
+    await f.start('login');
+    assert.equal(redirected, '/oauth2_return');
+    assert.equal(errored, false);
+    assert.equal(f.getState().status, 'redirecting');
+    assert.equal(f.getState().error, null);
+  }
+});
+
 test('requires a rest function', () => {
   assert.throws(() => createFlow({}), /rest/);
 });

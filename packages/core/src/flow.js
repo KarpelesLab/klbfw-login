@@ -9,7 +9,7 @@
 //
 // Ported and generalized from atonline-console's AuthFlow.vue.
 
-import { flowCall, formatError } from './transport.js';
+import { flowCall, formatError, getRedirectUrl } from './transport.js';
 
 // Status values surfaced through onStateChange:
 //   'loading'     — a flow step is being fetched (initial / switch)
@@ -119,6 +119,13 @@ export function createFlow(options = {}) {
       applyData(data);
     } catch (err) {
       if (destroyed) return;
+      // Server-side redirect (result: "redirect"): follow it, not an error.
+      const redirectUrl = getRedirectUrl(err);
+      if (redirectUrl) {
+        setStatus('redirecting');
+        onRedirect(redirectUrl);
+        return;
+      }
       onError(err);
       setStatus('error', formatError(err, t));
     }

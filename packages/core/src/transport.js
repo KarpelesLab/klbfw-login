@@ -53,6 +53,17 @@ export function formatError(error, t = (k) => k) {
   return t('auth_failed');
 }
 
+// A `result: "redirect"` response (Exception\\Redirect) means the server wants
+// the browser elsewhere — e.g. an OAuth2 grant finishing at /oauth2_return. It
+// may arrive as a rejection or a resolved value depending on the transport.
+// Returns the target URL, or null if `response` is not a redirect.
+export function getRedirectUrl(response) {
+  if (response && typeof response === 'object' && response.result === 'redirect' && response.redirect_url) {
+    return response.redirect_url;
+  }
+  return null;
+}
+
 // Perform a POST to User:flow and return the inner `data` payload. Throws the
 // raw error object/response on failure so the caller can format it.
 export async function flowCall(rest, params) {
