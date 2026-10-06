@@ -65,7 +65,7 @@ jobs:
       - name: Publish to npm (OIDC trusted publishing + provenance)
         run: |
           set -euo pipefail
-          for t in _tars/*.tgz; do
+          for t in ./_tars/*.tgz; do
             tmp="$(mktemp -d)"
             tar -xzf "$t" -C "$tmp" package/package.json
             name="$(node -p "require('$tmp/package/package.json').name")"
