@@ -40,6 +40,8 @@ export const CSS = `
 
 .klb-login__header { margin: 0 0 1.25rem; text-align: center; }
 .klb-login__message { margin: 0 0 1.25rem; text-align: center; color: var(--klb-login-muted); }
+.klb-login__message:has(+ .klb-login__submessage) { margin-bottom: 0.35rem; }
+.klb-login__submessage { margin: 0 0 1.25rem; text-align: center; color: var(--klb-login-muted); font-size: 0.9rem; }
 .klb-login__user {
   margin: 0 0 1.25rem;
   padding: 0.6rem 0.75rem;

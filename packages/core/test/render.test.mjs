@@ -329,3 +329,38 @@ test('OTP field without a length falls back to a plain input', async () => {
   assert.ok(el.querySelector('input.klb-login__input#otp_response'));
   inst.destroy();
 });
+
+test('initial step: oauth_first puts OAuth above labels; submessage only when it resolves', async () => {
+  const data = (submessage) => ({
+    initial: true, session: 's1', req: ['email'], message: 'Login', submessage,
+    realm_flags: { oauth_first: true, user_flow_v2: true },
+    fields: [
+      { type: 'oauth2', id: 'g', info: { Token_Name: 'google', Name: 'Google' }, button: { 'background-color': '#ffffff' } },
+      { cat: 'special', type: 'passkey', challenge: 'AAAA', rp_id: 'x', submit_as: 'passkey', timeout: 120000 },
+      { cat: 'label', type: 'label', label: 'Enter your email to sign in or create an account.' },
+      { cat: 'input', name: 'email', type: 'email', label: 'Email' },
+    ],
+  });
+
+  const a = document.createElement('div'); document.body.appendChild(a);
+  const ia = mount(a, { rest: () => ok(data('[I18N:flow_step_authenticate]')) });
+  await tick();
+  const order = [...a.querySelectorAll('.klb-login__oauth, .klb-login__text, input[type=email]')];
+  assert.ok(order[0].classList.contains('klb-login__oauth'), 'oauth first');
+  assert.ok(order[1].classList.contains('klb-login__text'), 'then the label');
+  assert.equal(order[2].tagName, 'INPUT', 'then the email input');
+  assert.equal(a.querySelector('.klb-login__submessage'), null, 'untranslated token is not shown');
+  const oauthButtons = a.querySelector('.klb-login__oauth-buttons');
+  assert.ok(oauthButtons.lastElementChild.classList.contains('klb-login__button--passkey'),
+    'passkey button follows the OAuth providers');
+  ia.destroy();
+
+  const b = document.createElement('div'); document.body.appendChild(b);
+  const ib = mount(b, {
+    rest: () => ok(data('[I18N:flow_step_authenticate]')),
+    messages: { 'en-US': { flow_step_authenticate: 'Sign in or sign up' } },
+  });
+  await tick();
+  assert.equal(b.querySelector('.klb-login__submessage').textContent, 'Sign in or sign up');
+  ib.destroy();
+});

@@ -13,6 +13,7 @@ import { normalizeFlags } from '../realm-flags.js';
 import { resolveFieldSpec } from './registry.js';
 import { registerBuiltins } from './fields/index.js';
 import { isPasskeySupported } from '../passkey.js';
+import { tokenName } from '../i18n.js';
 import {
   groupFields,
   passkeyLoginField,
@@ -129,6 +130,17 @@ export function createRenderer(element, controller, opts, t) {
       el('p', {}, label || t('loading')),
     ]);
 
+  // Text for an optional server string, or null when it is a token nobody
+  // could translate (e.g. "[I18N:flow_step_authenticate]" with no host or
+  // default translation) — better omitted than shown as a raw key.
+  const resolvedText = (value) => {
+    if (!value) return null;
+    const text = t(value);
+    const name = tokenName(value);
+    const isToken = name !== value;
+    return text && !(isToken && text === name) ? text : null;
+  };
+
   // The account a step is acting for, when the server names it (`data.user`) —
   // e.g. on the consent screen, so the user sees who is granting access.
   const renderUser = (user) => {
@@ -168,28 +180,38 @@ export function createRenderer(element, controller, opts, t) {
     // The `oauth_first` realm flag surfaces the OAuth providers above the form.
     const oauthFirst = ctx.hasFlag('oauth_first');
 
-    // Build the OAuth section for a given placement:
+    // The login passkey is an alternative sign-in like the OAuth providers, so
+    // its button goes right after theirs, not under the email field.
+    // (A registration passkey stays with the form it belongs to.)
+    const loginPasskeys = groups.passkey.filter((f) => f === ctx.passkeyLoginField);
+    const formPasskeys = groups.passkey.filter((f) => f !== ctx.passkeyLoginField);
+
+    // Build the OAuth section (providers, then the login passkey) for a given
+    // placement:
     //  - 'top'    (oauth_first): buttons first, then a divider introducing the
     //             email form below (only when a form actually follows).
     //  - 'bottom' (default): a divider ("Or sign in with…") then the buttons.
     const buildOAuth = (position) => {
-      if (!groups.oauth.length) return;
       const buttons = el('div', { class: 'klb-login__oauth-buttons' });
       groups.oauth.forEach((f) => appendField(buttons, f, ctx, overrides));
+      loginPasskeys.forEach((f) => appendField(buttons, f, ctx, overrides));
+      // Nothing rendered (no providers; passkey unsupported or not offered here).
+      if (!buttons.childNodes.length) return;
       const divider = (key) =>
         el('div', { class: 'klb-login__oauth-divider' }, el('span', {}, t(key)));
       const children =
         position === 'top'
           ? [buttons, groups.inputs.length ? divider('oauth_first_email_help') : null]
-          : [divider('user_oauth_help'), buttons];
+          : [divider(groups.oauth.length ? 'user_oauth_help' : 'passkey_or'), buttons];
       form.appendChild(el('div', { class: 'klb-login__oauth' }, children));
     };
 
+    // OAuth on top when the realm prefers it — before the labels, which
+    // describe the email form that follows the divider.
+    if (oauthFirst) buildOAuth('top');
+
     // Labels (instructions / errors / @action links).
     groups.labels.forEach((f) => appendField(form, f, ctx, overrides));
-
-    // OAuth on top when the realm prefers it.
-    if (oauthFirst) buildOAuth('top');
 
     // Hidden username on password-only steps → password-manager pairing.
     if (showHiddenIdentifier(groups, state.values, state.flowData)) {
@@ -225,8 +247,8 @@ export function createRenderer(element, controller, opts, t) {
       );
     }
 
-    // Passkey + other special fields.
-    groups.passkey.forEach((f) => appendField(form, f, ctx, overrides));
+    // Registration passkey + other special fields.
+    formPasskeys.forEach((f) => appendField(form, f, ctx, overrides));
     groups.special.forEach((f) => appendField(form, f, ctx, overrides));
 
     // Inline error (client validation or a failed submission).
@@ -312,6 +334,8 @@ export function createRenderer(element, controller, opts, t) {
       if (state.flowData.message) {
         element.appendChild(el('div', { class: 'klb-login__message' }, t(state.flowData.message)));
       }
+      const submessage = resolvedText(state.flowData.submessage);
+      if (submessage) element.appendChild(el('div', { class: 'klb-login__submessage' }, submessage));
       const user = renderUser(state.flowData.user);
       if (user) element.appendChild(user);
       const { form, groups, focusable } = renderStep(state);
