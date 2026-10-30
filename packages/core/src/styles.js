@@ -71,6 +71,59 @@ export const CSS = `
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--klb-login-accent) 25%, transparent);
 }
 
+/* OTP: a transparent input laid over a row of character cells. */
+.klb-login__otp { position: relative; }
+.klb-login__otp-cells { display: flex; justify-content: center; align-items: center; gap: 0.5rem; }
+.klb-login__otp-group { display: flex; gap: 0.4rem; flex: 1 1 0; justify-content: center; min-width: 0; }
+.klb-login__otp-sep { width: 0.6rem; height: 2px; flex: none; background: var(--klb-login-border); }
+.klb-login__otp-cell {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 3rem;
+  height: 3.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--klb-login-border);
+  border-radius: var(--klb-login-field-radius);
+  background: var(--klb-login-input-bg);
+  color: var(--klb-login-fg);
+  font-size: 1.4rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.klb-login__otp-cell--active {
+  border-color: var(--klb-login-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--klb-login-accent) 25%, transparent);
+}
+.klb-login__otp-cell--active:not(.klb-login__otp-cell--filled)::after {
+  content: '';
+  width: 2px;
+  height: 1.4rem;
+  background: var(--klb-login-fg);
+  animation: klb-login-otp-caret 1s steps(1) infinite;
+}
+@keyframes klb-login-otp-caret { 50% { opacity: 0; } }
+.klb-login__otp-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: transparent;
+  caret-color: transparent;
+  font-size: 16px; /* below 16px, iOS zooms the page on focus */
+  letter-spacing: 0;
+  cursor: text;
+}
+.klb-login__otp-input::selection { background: transparent; }
+
 .klb-login__checkbox { display: flex; align-items: center; gap: 0.5rem; }
 .klb-login__checkbox input { width: 18px; height: 18px; }
 .klb-login__checkbox label { font-weight: 400; }

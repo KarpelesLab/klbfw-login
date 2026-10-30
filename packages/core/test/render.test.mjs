@@ -259,3 +259,73 @@ test('oauth consent step translates [I18N:…] tokens and approves by submitting
   assert.equal(completed.redirect, '/oauth2_return');
   inst.destroy();
 });
+
+function otpRest(field, onSubmit) {
+  return (name, verb, params) => {
+    if (params.action) return ok({ session: 's1', req: [field.name], fields: [field] });
+    onSubmit(params);
+    return ok({ complete: true });
+  };
+}
+
+test('OTP field renders cells from length + mask and filters typed input', async () => {
+  const field = {
+    cat: 'input', name: 'code', type: 'text', label: 'Code', format: 'AAAA-AAAA', hint: 'otp',
+    otp: { format: 'alnum', length: 8 },
+  };
+  const el = document.createElement('div');
+  document.body.appendChild(el);
+  let sent = null;
+  const inst = mount(el, { rest: otpRest(field, (p) => { sent = p; }) });
+  await tick();
+
+  assert.equal(el.querySelectorAll('.klb-login__otp-cell').length, 8);
+  assert.equal(el.querySelectorAll('.klb-login__otp-group').length, 2, 'mask splits the cells 4-4');
+  const input = el.querySelector('.klb-login__otp-input');
+
+  // Typing one character at a time: case-normalized, never auto-submitted.
+  input.value = 'ab-c';
+  input.dispatchEvent(new window.InputEvent('input', { inputType: 'insertText' }));
+  assert.equal(input.value, 'ABC');
+  const cellText = [...el.querySelectorAll('.klb-login__otp-cell')].map((c) => c.textContent).join('');
+  assert.equal(cellText, 'ABC');
+  input.value = 'ABCDEFGH';
+  input.dispatchEvent(new window.InputEvent('input', { inputType: 'insertText' }));
+  await tick();
+  assert.equal(sent, null, 'typing the last character does not submit');
+  inst.destroy();
+});
+
+test('pasting an OTP trims invalid characters and auto-submits', async () => {
+  const field = {
+    cat: 'input', name: 'otp_response', type: 'text', label: 'Code', hint: 'otp',
+    otp: { format: 'all-digits', length: 6 }, attributes: { autocomplete: 'off' },
+  };
+  const el = document.createElement('div');
+  document.body.appendChild(el);
+  let sent = null;
+  const inst = mount(el, { rest: otpRest(field, (p) => { sent = p; }) });
+  await tick();
+
+  const input = el.querySelector('.klb-login__otp-input');
+  assert.equal(input.inputMode, 'numeric');
+  assert.equal(input.getAttribute('autocomplete'), 'off', 'server autocomplete is respected');
+
+  input.value = ' 123-456 789';
+  input.dispatchEvent(new window.InputEvent('input', { inputType: 'insertFromPaste' }));
+  assert.equal(input.value, '123456');
+  await tick();
+  assert.deepEqual(sent, { session: 's1', otp_response: '123456' });
+  inst.destroy();
+});
+
+test('OTP field without a length falls back to a plain input', async () => {
+  const field = { cat: 'input', name: 'otp_response', type: 'text', label: 'Code', hint: 'otp' };
+  const el = document.createElement('div');
+  document.body.appendChild(el);
+  const inst = mount(el, { rest: otpRest(field, () => {}) });
+  await tick();
+  assert.equal(el.querySelector('.klb-login__otp'), null);
+  assert.ok(el.querySelector('input.klb-login__input#otp_response'));
+  inst.destroy();
+});
